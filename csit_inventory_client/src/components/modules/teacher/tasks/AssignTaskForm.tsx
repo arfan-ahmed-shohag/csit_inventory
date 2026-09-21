@@ -14,6 +14,15 @@ import {
 } from "react-hook-form";
 
 export default function AssignTaskForm() {
+  const getTodayDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
   const form = useForm({
     defaultValues: {
       title: "",
@@ -127,22 +136,55 @@ export default function AssignTaskForm() {
             <Controller
               name="dueDate"
               control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={field.name}>
-                    Due Date <span className="text-red-500">*</span>
-                  </FieldLabel>
-                  <Input
-                    type="datetime-local"
-                    {...field}
-                    id={field.name}
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
+              rules={{
+                required: "Due Date is required",
+                validate: (value) => {
+                  if (!value) return "Due Date is required";
+                  const selected = new Date(value);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (selected < today) {
+                    return "Due date cannot be in the past";
+                  }
+                  return true;
+                },
+              }}
+              render={({ field, fieldState }) => {
+                const minNow = getTodayDateString();
+                return (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      Due Date <span className="text-red-500">*</span>
+                    </FieldLabel>
+                    <input
+                      type="date"
+                      id={field.name}
+                      name={field.name}
+                      min={minNow.slice(0, 10)}
+                      value={field.value ? field.value.slice(0, 10) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) {
+                          const selected = new Date(val);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          if (selected < today) return;
+                          // Store as full ISO string (end of day)
+                          field.onChange(val + "T23:59");
+                        } else {
+                          field.onChange("");
+                        }
+                      }}
+                      onBlur={field.onBlur}
+                      aria-invalid={fieldState.invalid}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                );
+              }}
             />
           </CardContent>
         </Card>
@@ -258,9 +300,8 @@ export default function AssignTaskForm() {
                 type="submit"
                 className="w-full"
                 size="lg"
-                // disabled={isSubmitting}
               >
-                {/* {isSubmitting ? "Assigning..." : "Assign Task"} */}
+
                 Assign Task
               </Button>
               <Button
@@ -268,16 +309,6 @@ export default function AssignTaskForm() {
                 variant="outline"
                 className="w-full"
                 size="lg"
-                // onClick={() => {
-                //   reset();
-                //   setRequirements([]);
-                //   setReferenceMaterials([]);
-                //   setUploadedFiles([]);
-                //   setUploadError(null);
-                //   setSelectedStudent("");
-                //   setSelectedProject("");
-                //   setSelectedDueDate("");
-                // }}
               >
                 Clear Form
               </Button>

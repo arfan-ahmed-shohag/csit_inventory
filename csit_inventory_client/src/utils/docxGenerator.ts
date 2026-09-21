@@ -40,7 +40,6 @@ export interface ReportData {
 
 export const parseHtmlToDocx = (htmlStr: string): Paragraph[] => {
   if (!htmlStr) return [];
-  // Use DOMParser to parse the HTML string
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlStr, "text/html");
   const paragraphs: Paragraph[] = [];
@@ -50,7 +49,6 @@ export const parseHtmlToDocx = (htmlStr: string): Paragraph[] => {
     node.childNodes.forEach((child) => {
       if (child.nodeType === Node.TEXT_NODE) {
         if (child.textContent) {
-          // Replace non-breaking spaces with normal spaces to prevent Word from treating sentences as one long word
           const text = child.textContent.replace(/\u00A0/g, ' ');
           runs.push(new TextRun({ text: text, size: 24, ...currentFormat }));
         }
@@ -60,7 +58,7 @@ export const parseHtmlToDocx = (htmlStr: string): Paragraph[] => {
         if (el.tagName === 'STRONG' || el.tagName === 'B') format.bold = true;
         if (el.tagName === 'EM' || el.tagName === 'I') format.italics = true;
         if (el.tagName === 'U') format.underline = { type: 'single' };
-        
+
         runs = runs.concat(parseNode(child, format));
       }
     });
@@ -91,7 +89,6 @@ export const parseHtmlToDocx = (htmlStr: string): Paragraph[] => {
           }
         });
       } else {
-        // Fallback for other elements
         const runs = parseNode(el);
         if (runs.length > 0 && textContent.trim() !== '') {
           paragraphs.push(new Paragraph({ children: runs, spacing: pSpacing, alignment: AlignmentType.JUSTIFIED }));
@@ -108,7 +105,6 @@ export const parseHtmlToDocx = (htmlStr: string): Paragraph[] => {
 export const generateDocx = async (data: ReportData): Promise<Blob> => {
   const sections = [];
 
-  // Title Page
   const titlePageChildren: any[] = [
     new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -117,7 +113,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
         new TextRun({
           text: data.title,
           bold: true,
-          size: 32, // 16pt
+          size: 32,
         }),
       ],
     }),
@@ -132,7 +128,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
           new TextRun({
             text: data.subtitle,
             bold: true,
-            size: 28, // 14pt
+            size: 28,
           }),
         ],
       })
@@ -146,7 +142,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
       children: [
         new TextRun({
           text: "by",
-          size: 24, // 12pt
+          size: 24,
         }),
       ],
     }),
@@ -200,7 +196,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
       })
     );
   } else {
-    // Spacer if no logo
     titlePageChildren.push(new Paragraph({ spacing: { after: 800 } }));
   }
 
@@ -245,7 +240,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     children: titlePageChildren,
   });
 
-  // Declaration of Original Work (Page 2)
   sections.push({
     properties: {},
     children: [
@@ -256,7 +250,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
         children: [new TextRun({ text: "DECLARATION OF ORIGINAL WORK", bold: true, size: 28 })],
       }),
       new Paragraph({
-        spacing: { line: 360 }, // 1.5 spacing
+        spacing: { line: 360 },
         children: [
           new TextRun({
             text: `The project titled “${data.title}”, submitted by ${data.studentName}, Roll No. ${data.studentId}, Session: ${data.session} to the Faculty of Computer Science and Engineering, Patuakhali Science & Technology University, has been accepted as satisfactory for the fulfilment of the requirements for the degree of Bachelor of Science in Computer Science & Engineering and approved as to its style and contents.`,
@@ -268,7 +262,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     ],
   });
 
-  // Board of Examinee (Page 3)
   const examineeChildren: any[] = [
     new Paragraph({
       heading: HeadingLevel.HEADING_2,
@@ -329,7 +322,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     examineeChildren.push(
       new Table({
         rows: tableRows,
-        columnWidths: [4000, 500, 5500], // Absolute sizes in TWIPs to prevent collapsing
+        columnWidths: [4000, 500, 5500],
         width: { size: 100, type: WidthType.PERCENTAGE },
       }),
       new Paragraph({ spacing: { after: 400 } })
@@ -350,7 +343,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     children: examineeChildren,
   });
 
-  // Certificate (Page 4)
   sections.push({
     properties: {},
     children: [
@@ -413,7 +405,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     ],
   });
 
-  // Dedication (Page 5)
   sections.push({
     properties: {},
     children: [
@@ -436,7 +427,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     ],
   });
 
-  // Letter of Approval (Page 6)
   sections.push({
     properties: {},
     children: [
@@ -487,7 +477,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     ],
   });
 
-  // Abstract (Page 7)
   sections.push({
     properties: {},
     children: [
@@ -501,8 +490,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
       new Paragraph({ children: [new PageBreak()] }),
     ],
   });
-  
-  // Acknowledgments (Page 8)
+
   sections.push({
     properties: {},
     children: [
@@ -525,7 +513,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     ],
   });
 
-  // Table of Contents
   sections.push({
     properties: {},
     children: [
@@ -543,7 +530,6 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
     ],
   });
 
-  // Chapters
   data.chapters.forEach((chapter, index) => {
     const chapterNumber = index + 1;
     const chapterChildren: any[] = [
@@ -556,7 +542,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
         ],
       }),
       new Paragraph({
-        heading: HeadingLevel.HEADING_2, // Subheading for TOC
+        heading: HeadingLevel.HEADING_2,
         alignment: AlignmentType.CENTER,
         spacing: { after: 400 },
         children: [
@@ -581,7 +567,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
             ],
           })
         );
-        
+
         const subTopicParagraphs = parseHtmlToDocx(subTopic.content);
         subTopicParagraphs.forEach(p => chapterChildren.push(p));
       });
@@ -597,7 +583,7 @@ export const generateDocx = async (data: ReportData): Promise<Blob> => {
               type: "png",
               data: chapter.imageBuffer,
               transformation: {
-                width: 500, // Roughly standard width
+                width: 500,
                 height: 300,
               },
             }),

@@ -50,7 +50,7 @@ export function SubmitTaskDialog({ taskId }: SubmitTaskDialogProps) {
     }
 
     setSelectedFile(file);
-    setFileUrl(""); // Reset URL when new file is selected
+    setFileUrl("");
   };
 
   const uploadFileToCloudinary = async (file: File): Promise<string> => {

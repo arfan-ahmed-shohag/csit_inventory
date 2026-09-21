@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Menu, X, ChevronDown, LogOut, Settings, User } from "lucide-react";
-import { ModeToggle } from "./ModeToggle";
 import { useUser } from "@/context/UserContext";
 import { Button } from "../ui/button";
 import { usePathname } from "next/navigation";
@@ -110,8 +109,6 @@ export default function Navbar() {
 
           {/* Right Section */}
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Theme Toggle */}
-            <ModeToggle />
 
             {/* Profile Section - Only render after hydration */}
 
