@@ -4,13 +4,11 @@ import sendEmail from "../../../shared/mailSender";
 import { jwtGenerator, jwtVerifier } from "../../../shared/jwtGenerator";
 import { config } from "../../../config";
 import { JwtPayload, Secret } from "jsonwebtoken";
-import { otpTemplate } from "../../../utils/emailTemplates/otpTemplate";
 import { prisma } from "../../../lib/prisma";
 import { UserRole, UserStatus } from "../../../../generated/prisma/enums";
 import { StringValue } from "ms";
 import AppError from "../../errors/appErrors";
-
-const generateOtp = () => crypto.randomInt(100000, 999999).toString();
+import { resetPasswordTemplate } from "../../../utils/emailTemplates/resetPasswordTemplate";
 
 const loginUser = async (payload: { email: string; password: string }) => {
   const { email, password } = payload;
@@ -49,52 +47,6 @@ const loginUser = async (payload: { email: string; password: string }) => {
     throw new AppError(400, "User does not exist in the system");
   }
 
-  const otp = generateOtp();
-
-  await sendEmail({
-    to: user.email,
-    subject: "Your OTP Code",
-    html: otpTemplate(otp),
-  });
-
-  const otpExpire = new Date();
-  otpExpire.setMinutes(otpExpire.getMinutes() + 10);
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      otp,
-      otpExpiry: otpExpire,
-    },
-  });
-
-  return { message: "OTP sent to your email" };
-};
-
-const verifyOtp = async (email: string, otp: string) => {
-  const user = await prisma.user.findUnique({
-    where: { email, userStatus: UserStatus.ACTIVE },
-  });
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  if (user.otp !== otp) {
-    throw new Error("Invalid OTP");
-  }
-
-  if (user.otpExpiry && user.otpExpiry < new Date()) {
-    throw new Error("OTP has expired");
-  }
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      otp: null,
-      otpExpiry: null,
-    },
-  });
-
   const jwtInfo = {
     email: user.email,
     role: user.role,
@@ -110,8 +62,6 @@ const verifyOtp = async (email: string, otp: string) => {
     createSecretKey: config.jwt.refresh_token_secret as Secret,
     expiresIn: config.jwt.refresh_token_expires_in as StringValue,
   });
-
-  console.log(refreshToken);
 
   return {
     token,
@@ -148,7 +98,49 @@ const generateNewToken = async (refreshToken: string) => {
   return newToken;
 };
 
-const resendOtp = async (email: string) => {
+const forgotPassword = async (email: string) => {
+  const user = await prisma.user.findUnique({
+    where: { email, userStatus: UserStatus.ACTIVE },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found with this email");
+  }
+
+  const resetToken = jwtGenerator({
+    userInfo: { email: user.email, role: user.role },
+    createSecretKey: config.jwt.token_secret as Secret,
+    expiresIn: "15m",
+  });
+
+  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:3000";
+  const resetLink = `${clientBaseUrl}/reset-password?token=${resetToken}&email=${user.email}`;
+
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: "Reset your password",
+      html: resetPasswordTemplate(resetLink),
+    });
+  } catch (err: any) {
+    console.error("Email dispatch failed (SMTP error):", err.message);
+  }
+
+  return { message: "Password reset link sent to your email", resetLink };
+};
+
+const resetPassword = async (payload: { email: string; token: string; newPassword: string }) => {
+  const { email, token, newPassword } = payload;
+
+  const decoded = jwtVerifier({
+    token,
+    secretKey: config.jwt.token_secret as Secret,
+  }) as JwtPayload;
+
+  if (decoded.email !== email) {
+    throw new AppError(400, "Invalid reset token or email mismatch");
+  }
+
   const user = await prisma.user.findUnique({
     where: { email, userStatus: UserStatus.ACTIVE },
   });
@@ -157,30 +149,14 @@ const resendOtp = async (email: string) => {
     throw new AppError(404, "User not found");
   }
 
-  if (!user.isEmailVerified) {
-    throw new AppError(400, "Email is not verified");
-  }
-
-  const otp = generateOtp();
-
-  await sendEmail({
-    to: user.email,
-    subject: "Your OTP Code",
-    html: otpTemplate(otp),
-  });
-
-  const otpExpire = new Date();
-
-  otpExpire.setMinutes(otpExpire.getMinutes() + 10);
+  const hashedPassword = await bcrypt.hash(newPassword, Number(config.salt_rounds) || 12);
 
   await prisma.user.update({
     where: { id: user.id },
-    data: {
-      otp,
-      otpExpiry: otpExpire,
-    },
+    data: { password: hashedPassword },
   });
-  return { message: "OTP resent to your email" };
+
+  return { message: "Password reset successfully" };
 };
 
 const logout = async () => {
@@ -189,8 +165,8 @@ const logout = async () => {
 
 export const AuthService = {
   loginUser,
-  verifyOtp,
   generateNewToken,
-  resendOtp,
+  forgotPassword,
+  resetPassword,
   logout,
 };

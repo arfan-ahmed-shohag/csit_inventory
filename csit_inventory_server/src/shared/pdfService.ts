@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import hbs from "handlebars";
-import puppeteer from "puppeteer";
+
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,30 +25,42 @@ const getBase64FromUrl = async (url: string): Promise<string> => {
 export const generatePdf = async (templateName: string, data: any) => {
   let browser = null;
   try {
-    try {
-      browser = await puppeteer.launch({
-        channel: "chrome",
+    if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+      const chromium = (await import("@sparticuz/chromium")).default;
+      const puppeteerCore = (await import("puppeteer-core")).default;
+      
+      browser = await puppeteerCore.launch({
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
         headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-web-security",
-        ],
       });
-    } catch (chromeLaunchErr) {
-      console.warn("Could not launch system Chrome, trying bundled Chromium...", chromeLaunchErr);
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-web-security",
-        ],
-      });
+    } else {
+      const puppeteer = (await import("puppeteer")).default;
+      try {
+        browser = await puppeteer.launch({
+          channel: "chrome",
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-web-security",
+          ],
+        });
+      } catch (chromeLaunchErr) {
+        console.warn("Could not launch system Chrome, trying bundled Chromium...", chromeLaunchErr);
+        browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-web-security",
+          ],
+        });
+      }
     }
     const page = await browser.newPage();
 

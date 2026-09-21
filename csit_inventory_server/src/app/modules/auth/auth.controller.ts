@@ -16,12 +16,6 @@ const dayToMs = (days: number) => days * 24 * 60 * 60 * 1000;
 const login = catchAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
   const result = await AuthService.loginUser({ email, password });
-  sendResponse(res, 200, "Login successful", result);
-});
-
-const verifyOtp = catchAsync(async (req: Request, res: Response) => {
-  const { email, otp } = req.body;
-  const result = await AuthService.verifyOtp(email, otp);
   const { refreshToken, token } = result;
 
   res.cookie("accessToken", token, {
@@ -33,7 +27,8 @@ const verifyOtp = catchAsync(async (req: Request, res: Response) => {
     ...cookieOptions,
     maxAge: dayToMs(Number(config.jwt.refresh_token_expires_in?.split("d")[0])),
   });
-  sendResponse(res, 200, "OTP verified successfully", { data: result });
+
+  sendResponse(res, 200, "Login successful", result);
 });
 
 const generateNewToken = catchAsync(async (req: Request, res: Response) => {
@@ -47,10 +42,16 @@ const generateNewToken = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, 200, "New token generated successfully", { data: result });
 });
 
-const resendOtp = catchAsync(async (req: Request, res: Response) => {
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
   const { email } = req.body;
-  const result = await AuthService.resendOtp(email);
-  sendResponse(res, 200, "OTP resend Successfully", result);
+  const result = await AuthService.forgotPassword(email);
+  sendResponse(res, 200, "Password reset link sent to your email", result);
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email, token, newPassword } = req.body;
+  const result = await AuthService.resetPassword({ email, token, newPassword });
+  sendResponse(res, 200, "Password reset successfully", result);
 });
 
 const logout = catchAsync(async (req: Request, res: Response) => {
@@ -64,8 +65,8 @@ const logout = catchAsync(async (req: Request, res: Response) => {
 
 export const AuthController = {
   login,
-  verifyOtp,
   generateNewToken,
-  resendOtp,
+  forgotPassword,
+  resetPassword,
   logout,
 };

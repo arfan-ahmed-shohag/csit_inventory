@@ -11,6 +11,14 @@ import { taskResubmissionTemplate } from "../../../utils/emailTemplates/taskResu
 import AppError from "../../errors/appErrors";
 
 const createTaskIntoDB = async (taskInfo: any) => {
+  if (taskInfo.dueDate) {
+    const dueDate = new Date(taskInfo.dueDate);
+    const now = new Date();
+    if (dueDate < now) {
+      throw new AppError(400, "Due date cannot be in the past");
+    }
+  }
+
   const result = await prisma.task.create({
     data: taskInfo,
   });

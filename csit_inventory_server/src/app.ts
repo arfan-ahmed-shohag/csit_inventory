@@ -11,14 +11,24 @@ import cors from "cors"
 import { CourseRoutes } from './app/modules/course/course.route';
 import { CourseTeacherRoutes } from './app/modules/courseTeacher/courseTeacher.route';
 import { TaskRoutes } from './app/modules/task/task.route';
+import helmet from 'helmet';
+import { authLimiter, globalLimiter } from './utils/limit';
 
 const app: Application = express();
+
+app.use(helmet())
 
 app.use(express.json());
 app.use(cors({
     origin: ["http://localhost:3000", "http://pstu.meteorologyclub.com"],
     credentials: true
 }))
+
+app.use("/api/v1", globalLimiter)
+app.use("/api/v1/auth/login", authLimiter)
+app.use("/api/v1/auth/forget-password", authLimiter)
+app.use("/api/v1/auth/reset-password", authLimiter)
+app.use("/api/v1/auth/change-password", authLimiter)
 
 app.use('/api/v1/students', StudentRoutes);
 app.use('/api/v1/users', UserRoutes);

@@ -73,14 +73,14 @@ var config = {
   "clientVersion": "7.3.0",
   "engineVersion": "9d6ad21cbbceab97458517b147a6a09ff43aa735",
   "activeProvider": "postgresql",
-  "inlineSchema": 'model Admin {\n  id          String   @id @default(uuid())\n  email       String   @unique\n  name        String\n  phoneNumber String\n  photoUrl    String?\n  isDeleted   Boolean  @default(false)\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  user User @relation(fields: [email], references: [email])\n\n  @@map("admins")\n}\n\nmodel CourseTeacher {\n  id        String   @id @default(uuid())\n  courseId  String\n  course    Courses  @relation(fields: [courseId], references: [id])\n  teacherId String\n  teacher   Teacher  @relation(fields: [teacherId], references: [id])\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@unique([courseId, teacherId])\n  @@map("course_teachers")\n}\n\nmodel Courses {\n  id          String       @id @default(uuid())\n  courseCode  String       @unique\n  courseName  String\n  description String?\n  credits     Float\n  semester    SemesterType\n  status      CourseStatus @default(ACTIVE)\n  createdAt   DateTime     @default(now())\n  updatedAt   DateTime     @updatedAt\n\n  projectTheses  ProjectThesis[]\n  courseTeachers CourseTeacher[]\n\n  @@map("courses")\n}\n\nenum CourseStatus {\n  ACTIVE\n  ARCHIVED\n}\n\nmodel ProjectThesis {\n  id                String              @id @default(uuid())\n  projectTitle      String\n  abstract          String\n  projectObjectives String\n  methodology       String\n  expectedOutcomes  String\n  technologiesTools String[]\n  estimatedTimeline String\n  attachments       String[]\n  feedback          String?\n  type              ProjectThesisType\n  status            ProjectThesisStatus @default(PENDING)\n  courseId          String\n  course            Courses             @relation(fields: [courseId], references: [id])\n  studentId         String\n  student           Student             @relation(fields: [studentId], references: [id])\n  supervisorId      String\n  supervisor        Teacher             @relation(fields: [supervisorId], references: [id])\n  semester          SemesterType        @default(FIRST)\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  tasks                   Task[]\n  projectThesisUpdateLogs ProjectThesisUpdateLog[]\n\n  @@map("projectThesis")\n}\n\nenum ProjectThesisType {\n  PROJECT\n  THESIS\n}\n\nenum ProjectThesisStatus {\n  PENDING\n  APPROVED\n  REJECTED\n  in_PROGRESS\n  COMPLETED\n}\n\nenum SemesterType {\n  FIRST   @map("1st")\n  SECOND  @map("2nd")\n  THIRD   @map("3rd")\n  FOURTH  @map("4th")\n  FIFTH   @map("5th")\n  SIXTH   @map("6th")\n  SEVENTH @map("7th")\n  EIGHTH  @map("8th")\n}\n\nmodel ProjectThesisUpdateLog {\n  id                 String        @id @default(uuid())\n  supervisorFeedback String?\n  projectThesisId    String\n  projectThesis      ProjectThesis @relation(fields: [projectThesisId], references: [id])\n  taskId             String\n  task               Task          @relation(fields: [taskId], references: [id])\n  liveLink           String?\n  fileUrl            String\n  updatedAt          DateTime      @default(now())\n\n  @@map("project_thesis_update_logs")\n}\n\nmodel Student {\n  id                 String       @id @default(uuid())\n  email              String       @unique\n  name               String\n  phoneNumber        String\n  address            String\n  studentId          String       @unique\n  registrationNumber String       @unique\n  profilePhoto       String?\n  dateOfBirth        DateTime\n  session            String\n  schoolName         String\n  collageName        String\n  semester           SemesterType @default(FIRST)\n  status             UserStatus   @default(ACTIVE)\n  isApproved         Boolean      @default(false)\n  isDeleted          Boolean      @default(false)\n  createdAt          DateTime     @default(now())\n  updatedAt          DateTime     @updatedAt\n\n  user          User            @relation(fields: [email], references: [email])\n  projectTheses ProjectThesis[]\n\n  @@map("students")\n}\n\nenum StudentStatus {\n  ACTIVE\n  INACTIVE\n  GRADUATED\n}\n\nmodel Task {\n  id                      String                   @id @default(uuid())\n  title                   String\n  description             String\n  dueDate                 DateTime\n  status                  TaskStatus               @default(TODO)\n  ratting                 Int                      @default(0)\n  feedback                String?\n  progressPercentage      Int                      @default(0)\n  projectThesisId         String\n  projectThesis           ProjectThesis            @relation(fields: [projectThesisId], references: [id])\n  requirements            String[]\n  referenceMaterials      String[]\n  createdAt               DateTime                 @default(now())\n  updatedAt               DateTime                 @updatedAt\n  projectThesisUpdateLogs ProjectThesisUpdateLog[]\n\n  @@map("tasks")\n}\n\nenum TaskStatus {\n  TODO\n  IN_PROGRESS\n  REVIEW\n  DONE\n  FAILED\n}\n\nmodel Teacher {\n  id          String             @id @default(uuid())\n  email       String             @unique\n  name        String\n  phoneNumber String\n  address     String\n  photoUrl    String?\n  faculty     String\n  department  Department\n  designation TeacherDesignation @default(LECTURER)\n  isChairman  Boolean            @default(false)\n  joinedAt    DateTime\n  status      TeacherStatus      @default(ACTIVE)\n  isDeleted   Boolean            @default(false)\n  createdAt   DateTime           @default(now())\n  updatedAt   DateTime           @updatedAt\n\n  user           User            @relation(fields: [email], references: [email])\n  projectTheses  ProjectThesis[]\n  courseTeachers CourseTeacher[]\n\n  @@map("teachers")\n}\n\nenum TeacherStatus {\n  ACTIVE\n  STUDY_LEAVE\n  RETIRED\n}\n\nenum TeacherDesignation {\n  LECTURER\n  ASSISTANT_PROFESSOR\n  ASSOCIATE_PROFESSOR\n  PROFESSOR\n}\n\nenum Department {\n  Computer_Science_And_Information_Technology\n  Computer_science_And_Communication_Engineering\n  Electrical_And_Electronic_Engineering\n  Physics_And_Mechanical_Engineering\n  Mathematics\n}\n\nmodel User {\n  id              String     @id @default(uuid())\n  email           String     @unique\n  password        String\n  role            UserRole   @default(STUDENT)\n  userStatus      UserStatus @default(ACTIVE)\n  isEmailVerified Boolean    @default(false)\n  otp             String?\n  otpExpiry       DateTime?\n  createdAt       DateTime   @default(now())\n  updatedAt       DateTime   @updatedAt\n\n  student  Student?\n  admins   Admin?\n  teachers Teacher?\n\n  @@map("users")\n}\n\nenum UserRole {\n  ADMIN\n  TEACHER\n  STUDENT\n}\n\nenum UserStatus {\n  ACTIVE\n  BLOCKED\n  DELETED\n}\n\n// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = "prisma-client"\n  output   = "../generated/prisma"\n}\n\ndatasource db {\n  provider = "postgresql"\n}\n',
+  "inlineSchema": 'model Admin {\n  id          String   @id @default(uuid())\n  email       String   @unique\n  name        String\n  phoneNumber String\n  photoUrl    String?\n  isDeleted   Boolean  @default(false)\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  user User @relation(fields: [email], references: [email])\n\n  @@map("admins")\n}\n\nmodel CourseTeacher {\n  id        String   @id @default(uuid())\n  courseId  String\n  course    Courses  @relation(fields: [courseId], references: [id])\n  teacherId String\n  teacher   Teacher  @relation(fields: [teacherId], references: [id])\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@unique([courseId, teacherId])\n  @@map("course_teachers")\n}\n\nmodel Courses {\n  id          String       @id @default(uuid())\n  courseCode  String       @unique\n  courseName  String\n  description String?\n  credits     Float\n  semester    SemesterType\n  status      CourseStatus @default(ACTIVE)\n  createdAt   DateTime     @default(now())\n  updatedAt   DateTime     @updatedAt\n\n  projectTheses  ProjectThesis[]\n  courseTeachers CourseTeacher[]\n\n  @@map("courses")\n}\n\nenum CourseStatus {\n  ACTIVE\n  ARCHIVED\n}\n\nmodel ProjectThesis {\n  id                String              @id @default(uuid())\n  projectTitle      String\n  abstract          String\n  projectObjectives String\n  methodology       String\n  expectedOutcomes  String\n  technologiesTools String[]\n  estimatedTimeline String\n  attachments       String[]\n  finalReport       String?\n  feedback          String?\n  type              ProjectThesisType\n  status            ProjectThesisStatus @default(PENDING)\n  courseId          String\n  course            Courses             @relation(fields: [courseId], references: [id])\n  studentId         String\n  student           Student             @relation(fields: [studentId], references: [id])\n  supervisorId      String\n  supervisor        Teacher             @relation(fields: [supervisorId], references: [id])\n  semester          SemesterType        @default(FIRST)\n  evaluatedMark     Float?\n  obtainedMark      Float?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  tasks                   Task[]\n  projectThesisUpdateLogs ProjectThesisUpdateLog[]\n\n  @@map("projectThesis")\n}\n\nenum ProjectThesisType {\n  PROJECT\n  THESIS\n}\n\nenum ProjectThesisStatus {\n  PENDING\n  APPROVED\n  REJECTED\n  in_PROGRESS\n  COMPLETED\n}\n\nenum SemesterType {\n  FIRST   @map("1st")\n  SECOND  @map("2nd")\n  THIRD   @map("3rd")\n  FOURTH  @map("4th")\n  FIFTH   @map("5th")\n  SIXTH   @map("6th")\n  SEVENTH @map("7th")\n  EIGHTH  @map("8th")\n}\n\nmodel ProjectThesisUpdateLog {\n  id                 String        @id @default(uuid())\n  supervisorFeedback String?\n  projectThesisId    String\n  projectThesis      ProjectThesis @relation(fields: [projectThesisId], references: [id])\n  taskId             String\n  task               Task          @relation(fields: [taskId], references: [id])\n  liveLink           String?\n  fileUrl            String\n  updatedAt          DateTime      @default(now())\n\n  @@map("project_thesis_update_logs")\n}\n\nmodel Student {\n  id                 String       @id @default(uuid())\n  email              String       @unique\n  name               String\n  phoneNumber        String\n  address            String\n  studentId          String       @unique\n  registrationNumber String       @unique\n  profilePhoto       String?\n  dateOfBirth        DateTime\n  session            String\n  schoolName         String\n  collageName        String\n  semester           SemesterType @default(FIRST)\n  status             UserStatus   @default(ACTIVE)\n  isApproved         Boolean      @default(false)\n  isDeleted          Boolean      @default(false)\n  createdAt          DateTime     @default(now())\n  updatedAt          DateTime     @updatedAt\n\n  user          User            @relation(fields: [email], references: [email])\n  projectTheses ProjectThesis[]\n\n  @@map("students")\n}\n\nenum StudentStatus {\n  ACTIVE\n  INACTIVE\n  GRADUATED\n}\n\nmodel Task {\n  id                      String                   @id @default(uuid())\n  title                   String\n  description             String\n  dueDate                 DateTime\n  status                  TaskStatus               @default(TODO)\n  ratting                 Int                      @default(0)\n  feedback                String?\n  progressPercentage      Int                      @default(0)\n  projectThesisId         String\n  projectThesis           ProjectThesis            @relation(fields: [projectThesisId], references: [id])\n  requirements            String[]\n  referenceMaterials      String[]\n  createdAt               DateTime                 @default(now())\n  updatedAt               DateTime                 @updatedAt\n  projectThesisUpdateLogs ProjectThesisUpdateLog[]\n\n  @@map("tasks")\n}\n\nenum TaskStatus {\n  TODO\n  IN_PROGRESS\n  REVIEW\n  DONE\n  FAILED\n}\n\nmodel Teacher {\n  id          String             @id @default(uuid())\n  email       String             @unique\n  name        String\n  phoneNumber String\n  address     String\n  photoUrl    String?\n  faculty     String\n  department  Department\n  designation TeacherDesignation @default(LECTURER)\n  isChairman  Boolean            @default(false)\n  joinedAt    DateTime\n  status      TeacherStatus      @default(ACTIVE)\n  isDeleted   Boolean            @default(false)\n  createdAt   DateTime           @default(now())\n  updatedAt   DateTime           @updatedAt\n\n  user           User            @relation(fields: [email], references: [email])\n  projectTheses  ProjectThesis[]\n  courseTeachers CourseTeacher[]\n\n  @@map("teachers")\n}\n\nenum TeacherStatus {\n  ACTIVE\n  STUDY_LEAVE\n  RETIRED\n}\n\nenum TeacherDesignation {\n  LECTURER\n  ASSISTANT_PROFESSOR\n  ASSOCIATE_PROFESSOR\n  PROFESSOR\n}\n\nenum Department {\n  Computer_Science_And_Information_Technology\n  Computer_science_And_Communication_Engineering\n  Electrical_And_Electronic_Engineering\n  Physics_And_Mechanical_Engineering\n  Mathematics\n}\n\nmodel User {\n  id              String     @id @default(uuid())\n  email           String     @unique\n  password        String\n  role            UserRole   @default(STUDENT)\n  userStatus      UserStatus @default(ACTIVE)\n  isEmailVerified Boolean    @default(false)\n  otp             String?\n  otpExpiry       DateTime?\n  createdAt       DateTime   @default(now())\n  updatedAt       DateTime   @updatedAt\n\n  student  Student?\n  admins   Admin?\n  teachers Teacher?\n\n  @@map("users")\n}\n\nenum UserRole {\n  ADMIN\n  TEACHER\n  STUDENT\n}\n\nenum UserStatus {\n  ACTIVE\n  BLOCKED\n  DELETED\n}\n\n// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = "prisma-client"\n  output   = "../generated/prisma"\n}\n\ndatasource db {\n  provider = "postgresql"\n}\n',
   "runtimeDataModel": {
     "models": {},
     "enums": {},
     "types": {}
   }
 };
-config.runtimeDataModel = JSON.parse('{"models":{"Admin":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"photoUrl","kind":"scalar","type":"String"},{"name":"isDeleted","kind":"scalar","type":"Boolean"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"user","kind":"object","type":"User","relationName":"AdminToUser"}],"dbName":"admins"},"CourseTeacher":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"courseId","kind":"scalar","type":"String"},{"name":"course","kind":"object","type":"Courses","relationName":"CourseTeacherToCourses"},{"name":"teacherId","kind":"scalar","type":"String"},{"name":"teacher","kind":"object","type":"Teacher","relationName":"CourseTeacherToTeacher"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"course_teachers"},"Courses":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"courseCode","kind":"scalar","type":"String"},{"name":"courseName","kind":"scalar","type":"String"},{"name":"description","kind":"scalar","type":"String"},{"name":"credits","kind":"scalar","type":"Float"},{"name":"semester","kind":"enum","type":"SemesterType"},{"name":"status","kind":"enum","type":"CourseStatus"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"projectTheses","kind":"object","type":"ProjectThesis","relationName":"CoursesToProjectThesis"},{"name":"courseTeachers","kind":"object","type":"CourseTeacher","relationName":"CourseTeacherToCourses"}],"dbName":"courses"},"ProjectThesis":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"projectTitle","kind":"scalar","type":"String"},{"name":"abstract","kind":"scalar","type":"String"},{"name":"projectObjectives","kind":"scalar","type":"String"},{"name":"methodology","kind":"scalar","type":"String"},{"name":"expectedOutcomes","kind":"scalar","type":"String"},{"name":"technologiesTools","kind":"scalar","type":"String"},{"name":"estimatedTimeline","kind":"scalar","type":"String"},{"name":"attachments","kind":"scalar","type":"String"},{"name":"feedback","kind":"scalar","type":"String"},{"name":"type","kind":"enum","type":"ProjectThesisType"},{"name":"status","kind":"enum","type":"ProjectThesisStatus"},{"name":"courseId","kind":"scalar","type":"String"},{"name":"course","kind":"object","type":"Courses","relationName":"CoursesToProjectThesis"},{"name":"studentId","kind":"scalar","type":"String"},{"name":"student","kind":"object","type":"Student","relationName":"ProjectThesisToStudent"},{"name":"supervisorId","kind":"scalar","type":"String"},{"name":"supervisor","kind":"object","type":"Teacher","relationName":"ProjectThesisToTeacher"},{"name":"semester","kind":"enum","type":"SemesterType"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"tasks","kind":"object","type":"Task","relationName":"ProjectThesisToTask"},{"name":"projectThesisUpdateLogs","kind":"object","type":"ProjectThesisUpdateLog","relationName":"ProjectThesisToProjectThesisUpdateLog"}],"dbName":"projectThesis"},"ProjectThesisUpdateLog":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"supervisorFeedback","kind":"scalar","type":"String"},{"name":"projectThesisId","kind":"scalar","type":"String"},{"name":"projectThesis","kind":"object","type":"ProjectThesis","relationName":"ProjectThesisToProjectThesisUpdateLog"},{"name":"taskId","kind":"scalar","type":"String"},{"name":"task","kind":"object","type":"Task","relationName":"ProjectThesisUpdateLogToTask"},{"name":"liveLink","kind":"scalar","type":"String"},{"name":"fileUrl","kind":"scalar","type":"String"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"project_thesis_update_logs"},"Student":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"address","kind":"scalar","type":"String"},{"name":"studentId","kind":"scalar","type":"String"},{"name":"registrationNumber","kind":"scalar","type":"String"},{"name":"profilePhoto","kind":"scalar","type":"String"},{"name":"dateOfBirth","kind":"scalar","type":"DateTime"},{"name":"session","kind":"scalar","type":"String"},{"name":"schoolName","kind":"scalar","type":"String"},{"name":"collageName","kind":"scalar","type":"String"},{"name":"semester","kind":"enum","type":"SemesterType"},{"name":"status","kind":"enum","type":"UserStatus"},{"name":"isApproved","kind":"scalar","type":"Boolean"},{"name":"isDeleted","kind":"scalar","type":"Boolean"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"user","kind":"object","type":"User","relationName":"StudentToUser"},{"name":"projectTheses","kind":"object","type":"ProjectThesis","relationName":"ProjectThesisToStudent"}],"dbName":"students"},"Task":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"title","kind":"scalar","type":"String"},{"name":"description","kind":"scalar","type":"String"},{"name":"dueDate","kind":"scalar","type":"DateTime"},{"name":"status","kind":"enum","type":"TaskStatus"},{"name":"ratting","kind":"scalar","type":"Int"},{"name":"feedback","kind":"scalar","type":"String"},{"name":"progressPercentage","kind":"scalar","type":"Int"},{"name":"projectThesisId","kind":"scalar","type":"String"},{"name":"projectThesis","kind":"object","type":"ProjectThesis","relationName":"ProjectThesisToTask"},{"name":"requirements","kind":"scalar","type":"String"},{"name":"referenceMaterials","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"projectThesisUpdateLogs","kind":"object","type":"ProjectThesisUpdateLog","relationName":"ProjectThesisUpdateLogToTask"}],"dbName":"tasks"},"Teacher":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"address","kind":"scalar","type":"String"},{"name":"photoUrl","kind":"scalar","type":"String"},{"name":"faculty","kind":"scalar","type":"String"},{"name":"department","kind":"enum","type":"Department"},{"name":"designation","kind":"enum","type":"TeacherDesignation"},{"name":"isChairman","kind":"scalar","type":"Boolean"},{"name":"joinedAt","kind":"scalar","type":"DateTime"},{"name":"status","kind":"enum","type":"TeacherStatus"},{"name":"isDeleted","kind":"scalar","type":"Boolean"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"user","kind":"object","type":"User","relationName":"TeacherToUser"},{"name":"projectTheses","kind":"object","type":"ProjectThesis","relationName":"ProjectThesisToTeacher"},{"name":"courseTeachers","kind":"object","type":"CourseTeacher","relationName":"CourseTeacherToTeacher"}],"dbName":"teachers"},"User":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"password","kind":"scalar","type":"String"},{"name":"role","kind":"enum","type":"UserRole"},{"name":"userStatus","kind":"enum","type":"UserStatus"},{"name":"isEmailVerified","kind":"scalar","type":"Boolean"},{"name":"otp","kind":"scalar","type":"String"},{"name":"otpExpiry","kind":"scalar","type":"DateTime"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"student","kind":"object","type":"Student","relationName":"StudentToUser"},{"name":"admins","kind":"object","type":"Admin","relationName":"AdminToUser"},{"name":"teachers","kind":"object","type":"Teacher","relationName":"TeacherToUser"}],"dbName":"users"}},"enums":{},"types":{}}');
+config.runtimeDataModel = JSON.parse('{"models":{"Admin":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"photoUrl","kind":"scalar","type":"String"},{"name":"isDeleted","kind":"scalar","type":"Boolean"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"user","kind":"object","type":"User","relationName":"AdminToUser"}],"dbName":"admins"},"CourseTeacher":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"courseId","kind":"scalar","type":"String"},{"name":"course","kind":"object","type":"Courses","relationName":"CourseTeacherToCourses"},{"name":"teacherId","kind":"scalar","type":"String"},{"name":"teacher","kind":"object","type":"Teacher","relationName":"CourseTeacherToTeacher"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"course_teachers"},"Courses":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"courseCode","kind":"scalar","type":"String"},{"name":"courseName","kind":"scalar","type":"String"},{"name":"description","kind":"scalar","type":"String"},{"name":"credits","kind":"scalar","type":"Float"},{"name":"semester","kind":"enum","type":"SemesterType"},{"name":"status","kind":"enum","type":"CourseStatus"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"projectTheses","kind":"object","type":"ProjectThesis","relationName":"CoursesToProjectThesis"},{"name":"courseTeachers","kind":"object","type":"CourseTeacher","relationName":"CourseTeacherToCourses"}],"dbName":"courses"},"ProjectThesis":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"projectTitle","kind":"scalar","type":"String"},{"name":"abstract","kind":"scalar","type":"String"},{"name":"projectObjectives","kind":"scalar","type":"String"},{"name":"methodology","kind":"scalar","type":"String"},{"name":"expectedOutcomes","kind":"scalar","type":"String"},{"name":"technologiesTools","kind":"scalar","type":"String"},{"name":"estimatedTimeline","kind":"scalar","type":"String"},{"name":"attachments","kind":"scalar","type":"String"},{"name":"finalReport","kind":"scalar","type":"String"},{"name":"feedback","kind":"scalar","type":"String"},{"name":"type","kind":"enum","type":"ProjectThesisType"},{"name":"status","kind":"enum","type":"ProjectThesisStatus"},{"name":"courseId","kind":"scalar","type":"String"},{"name":"course","kind":"object","type":"Courses","relationName":"CoursesToProjectThesis"},{"name":"studentId","kind":"scalar","type":"String"},{"name":"student","kind":"object","type":"Student","relationName":"ProjectThesisToStudent"},{"name":"supervisorId","kind":"scalar","type":"String"},{"name":"supervisor","kind":"object","type":"Teacher","relationName":"ProjectThesisToTeacher"},{"name":"semester","kind":"enum","type":"SemesterType"},{"name":"evaluatedMark","kind":"scalar","type":"Float"},{"name":"obtainedMark","kind":"scalar","type":"Float"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"tasks","kind":"object","type":"Task","relationName":"ProjectThesisToTask"},{"name":"projectThesisUpdateLogs","kind":"object","type":"ProjectThesisUpdateLog","relationName":"ProjectThesisToProjectThesisUpdateLog"}],"dbName":"projectThesis"},"ProjectThesisUpdateLog":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"supervisorFeedback","kind":"scalar","type":"String"},{"name":"projectThesisId","kind":"scalar","type":"String"},{"name":"projectThesis","kind":"object","type":"ProjectThesis","relationName":"ProjectThesisToProjectThesisUpdateLog"},{"name":"taskId","kind":"scalar","type":"String"},{"name":"task","kind":"object","type":"Task","relationName":"ProjectThesisUpdateLogToTask"},{"name":"liveLink","kind":"scalar","type":"String"},{"name":"fileUrl","kind":"scalar","type":"String"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"project_thesis_update_logs"},"Student":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"address","kind":"scalar","type":"String"},{"name":"studentId","kind":"scalar","type":"String"},{"name":"registrationNumber","kind":"scalar","type":"String"},{"name":"profilePhoto","kind":"scalar","type":"String"},{"name":"dateOfBirth","kind":"scalar","type":"DateTime"},{"name":"session","kind":"scalar","type":"String"},{"name":"schoolName","kind":"scalar","type":"String"},{"name":"collageName","kind":"scalar","type":"String"},{"name":"semester","kind":"enum","type":"SemesterType"},{"name":"status","kind":"enum","type":"UserStatus"},{"name":"isApproved","kind":"scalar","type":"Boolean"},{"name":"isDeleted","kind":"scalar","type":"Boolean"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"user","kind":"object","type":"User","relationName":"StudentToUser"},{"name":"projectTheses","kind":"object","type":"ProjectThesis","relationName":"ProjectThesisToStudent"}],"dbName":"students"},"Task":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"title","kind":"scalar","type":"String"},{"name":"description","kind":"scalar","type":"String"},{"name":"dueDate","kind":"scalar","type":"DateTime"},{"name":"status","kind":"enum","type":"TaskStatus"},{"name":"ratting","kind":"scalar","type":"Int"},{"name":"feedback","kind":"scalar","type":"String"},{"name":"progressPercentage","kind":"scalar","type":"Int"},{"name":"projectThesisId","kind":"scalar","type":"String"},{"name":"projectThesis","kind":"object","type":"ProjectThesis","relationName":"ProjectThesisToTask"},{"name":"requirements","kind":"scalar","type":"String"},{"name":"referenceMaterials","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"projectThesisUpdateLogs","kind":"object","type":"ProjectThesisUpdateLog","relationName":"ProjectThesisUpdateLogToTask"}],"dbName":"tasks"},"Teacher":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"address","kind":"scalar","type":"String"},{"name":"photoUrl","kind":"scalar","type":"String"},{"name":"faculty","kind":"scalar","type":"String"},{"name":"department","kind":"enum","type":"Department"},{"name":"designation","kind":"enum","type":"TeacherDesignation"},{"name":"isChairman","kind":"scalar","type":"Boolean"},{"name":"joinedAt","kind":"scalar","type":"DateTime"},{"name":"status","kind":"enum","type":"TeacherStatus"},{"name":"isDeleted","kind":"scalar","type":"Boolean"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"user","kind":"object","type":"User","relationName":"TeacherToUser"},{"name":"projectTheses","kind":"object","type":"ProjectThesis","relationName":"ProjectThesisToTeacher"},{"name":"courseTeachers","kind":"object","type":"CourseTeacher","relationName":"CourseTeacherToTeacher"}],"dbName":"teachers"},"User":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"password","kind":"scalar","type":"String"},{"name":"role","kind":"enum","type":"UserRole"},{"name":"userStatus","kind":"enum","type":"UserStatus"},{"name":"isEmailVerified","kind":"scalar","type":"Boolean"},{"name":"otp","kind":"scalar","type":"String"},{"name":"otpExpiry","kind":"scalar","type":"DateTime"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"student","kind":"object","type":"Student","relationName":"StudentToUser"},{"name":"admins","kind":"object","type":"Admin","relationName":"AdminToUser"},{"name":"teachers","kind":"object","type":"Teacher","relationName":"TeacherToUser"}],"dbName":"users"}},"enums":{},"types":{}}');
 async function decodeBase64AsWasm(wasmBase64) {
   const { Buffer: Buffer2 } = await import("buffer");
   const wasmArray = Buffer2.from(wasmBase64, "base64");
@@ -214,6 +214,7 @@ var ProjectThesisScalarFieldEnum = {
   technologiesTools: "technologiesTools",
   estimatedTimeline: "estimatedTimeline",
   attachments: "attachments",
+  finalReport: "finalReport",
   feedback: "feedback",
   type: "type",
   status: "status",
@@ -221,6 +222,8 @@ var ProjectThesisScalarFieldEnum = {
   studentId: "studentId",
   supervisorId: "supervisorId",
   semester: "semester",
+  evaluatedMark: "evaluatedMark",
+  obtainedMark: "obtainedMark",
   createdAt: "createdAt",
   updatedAt: "updatedAt"
 };
@@ -947,7 +950,6 @@ var StudentService = {
 import path3 from "path";
 import fs from "fs-extra";
 import hbs from "handlebars";
-import puppeteer from "puppeteer";
 import { fileURLToPath as fileURLToPath2 } from "url";
 var __filename = fileURLToPath2(import.meta.url);
 var __dirname = path3.dirname(__filename);
@@ -968,30 +970,41 @@ var getBase64FromUrl = async (url) => {
 var generatePdf = async (templateName, data) => {
   let browser = null;
   try {
-    try {
-      browser = await puppeteer.launch({
-        channel: "chrome",
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-web-security"
-        ]
+    if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+      const chromium = (await import("@sparticuz/chromium")).default;
+      const puppeteerCore = (await import("puppeteer-core")).default;
+      browser = await puppeteerCore.launch({
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
+        headless: true
       });
-    } catch (chromeLaunchErr) {
-      console.warn("Could not launch system Chrome, trying bundled Chromium...", chromeLaunchErr);
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-web-security"
-        ]
-      });
+    } else {
+      const puppeteer = (await import("puppeteer")).default;
+      try {
+        browser = await puppeteer.launch({
+          channel: "chrome",
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-web-security"
+          ]
+        });
+      } catch (chromeLaunchErr) {
+        console.warn("Could not launch system Chrome, trying bundled Chromium...", chromeLaunchErr);
+        browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-web-security"
+          ]
+        });
+      }
     }
     const page = await browser.newPage();
     const logoUrl = "https://res.cloudinary.com/dwduymu1l/image/upload/v1769187917/Patuakhali_Science_and_Technology_University_logo_rv2zwu.png";
@@ -2065,6 +2078,19 @@ var updateProjectThesisInDB = async (id, updateInfo) => {
   });
   return result;
 };
+var submitFinalReportInDB = async (id, finalReportUrl) => {
+  const isProjectThesisExist = await prisma.projectThesis.findUnique({
+    where: { id }
+  });
+  if (!isProjectThesisExist) {
+    throw new appErrors_default(404, "Project or Thesis not found");
+  }
+  const result = await prisma.projectThesis.update({
+    where: { id },
+    data: { finalReport: finalReportUrl }
+  });
+  return result;
+};
 var approveProjectThesisInDB = async (id, note) => {
   const isProjectThesisExist = await prisma.projectThesis.findUnique({
     where: { id },
@@ -2145,9 +2171,10 @@ var startProjectThesisInDB = async (id) => {
   });
   return result;
 };
-var completeProjectThesisInDB = async (id) => {
+var completeProjectThesisInDB = async (id, evaluatedMark) => {
   const isProjectThesisExist = await prisma.projectThesis.findUnique({
-    where: { id }
+    where: { id },
+    include: { tasks: true }
   });
   if (!isProjectThesisExist) {
     throw new Error("Project or Thesis not found");
@@ -2164,9 +2191,18 @@ var completeProjectThesisInDB = async (id) => {
   if (isTasksIncomplete) {
     throw new Error("Cannot complete Project or Thesis with incomplete tasks");
   }
+  const overallProgress = calculateOverall(isProjectThesisExist.tasks);
+  let obtainedMark = void 0;
+  if (evaluatedMark !== void 0) {
+    obtainedMark = evaluatedMark * overallProgress / 100;
+  }
   const result = await prisma.projectThesis.update({
     where: { id },
-    data: { status: ProjectThesisStatus.COMPLETED }
+    data: {
+      status: ProjectThesisStatus.COMPLETED,
+      evaluatedMark,
+      obtainedMark
+    }
   });
   return result;
 };
@@ -2408,7 +2444,8 @@ var ProjectThesisService = {
   completeProjectThesisInDB,
   generateStudentProposalReport,
   generateTeacherProposalReport,
-  generateProjectThesisReportForAdmin
+  generateProjectThesisReportForAdmin,
+  submitFinalReportInDB
 };
 
 // src/app/modules/projectThesis/projectThesis.controller.ts
@@ -2449,6 +2486,16 @@ var updateProjectThesisInDB2 = catchAsync(
     sendResponse(res, 200, "Project or Thesis updated successfully", result);
   }
 );
+var submitFinalReport = catchAsync(
+  async (req, res) => {
+    const { id } = req.params;
+    const result = await ProjectThesisService.submitFinalReportInDB(
+      id,
+      req.body.finalReportUrl
+    );
+    sendResponse(res, 200, "Final report submitted successfully", result);
+  }
+);
 var approveProjectThesis = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await ProjectThesisService.approveProjectThesisInDB(
@@ -2482,8 +2529,10 @@ var startProjectThesisInDB2 = catchAsync(
 var completeProjectThesisInDB2 = catchAsync(
   async (req, res) => {
     const { id } = req.params;
+    const { evaluatedMark } = req.body;
     const result = await ProjectThesisService.completeProjectThesisInDB(
-      id
+      id,
+      evaluatedMark ? Number(evaluatedMark) : void 0
     );
     sendResponse(res, 200, "Project or Thesis completed successfully", result);
   }
@@ -2601,7 +2650,8 @@ var ProjectThesisController = {
   completeProjectThesisInDB: completeProjectThesisInDB2,
   generateStudentProposalReport: generateStudentProposalReport2,
   generateTeacherProposalReport: generateTeacherProposalReport2,
-  generateProjectThesisReportForAdmin: generateProjectThesisReportForAdmin2
+  generateProjectThesisReportForAdmin: generateProjectThesisReportForAdmin2,
+  submitFinalReport
 };
 
 // src/app/modules/projectThesis/projectThesis.route.ts
@@ -2618,6 +2668,7 @@ router6.patch("/approve-project-thesis/:id", auth_default(UserRole.TEACHER), Pro
 router6.patch("/reject-project-thesis/:id", auth_default(UserRole.TEACHER), ProjectThesisController.rejectProjectThesis);
 router6.patch("/start-project-thesis/:id", auth_default(UserRole.STUDENT), ProjectThesisController.startProjectThesisInDB);
 router6.patch("/complete-project-thesis/:id", auth_default(UserRole.TEACHER), ProjectThesisController.completeProjectThesisInDB);
+router6.patch("/submit-final-report/:id", auth_default(UserRole.STUDENT), ProjectThesisController.submitFinalReport);
 router6.patch("/:id", ProjectThesisController.updateProjectThesisInDB);
 var ProjectThesisRoutes = router6;
 
@@ -2626,10 +2677,9 @@ import express7 from "express";
 
 // src/app/modules/auth/auth.service.ts
 import bcrypt2 from "bcrypt";
-import crypto from "crypto";
 
-// src/utils/emailTemplates/otpTemplate.ts
-var otpTemplate = (otp) => {
+// src/utils/emailTemplates/resetPasswordTemplate.ts
+var resetPasswordTemplate = (resetLink) => {
   return `
     <!DOCTYPE html>
     <html>
@@ -2643,66 +2693,54 @@ var otpTemplate = (otp) => {
         </style>
     </head>
     <body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f7; margin: 0; padding: 0;">
-        
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7; padding: 20px;">
             <tr>
                 <td align="center">
-                    
                     <table border="0" cellpadding="0" cellspacing="0" width="600" class="container" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); overflow: hidden;">
-                        
                         <tr>
-                            <td style="background-color: #2c3e50; padding: 20px; text-align: center; color: #ffffff; font-size: 20px; font-weight: bold; letter-spacing: 1px;">
-                                Secure Login
+                            <td style="background-color: #4f46e5; padding: 20px; text-align: center; color: #ffffff; font-size: 20px; font-weight: bold; letter-spacing: 1px;">
+                                Password Reset Request
                             </td>
                         </tr>
-
                         <tr>
                             <td style="padding: 40px 30px; color: #333333;">
                                 <p style="margin: 0 0 20px 0; font-size: 16px; color: #555;">Hello,</p>
                                 <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5;">
-                                    You requested a One-Time Password (OTP) to access your account. Please use the code below to complete your request.
+                                    We received a request to reset your password. Please click the button below to set up a new password for your account.
                                 </p>
-
                                 <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 30px 0;">
                                     <tr>
                                         <td align="center">
-                                            <div style="background-color: #eef2f6; padding: 20px; border-radius: 8px; border: 1px dashed #b0c4de; display: inline-block;">
-                                                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2c3e50; font-family: monospace;">
-                                                    ${otp}
-                                                </span>
-                                            </div>
+                                            <a href="${resetLink}" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">
+                                                Reset Password
+                                            </a>
                                         </td>
                                     </tr>
                                 </table>
-
                                 <p style="margin: 0 0 10px 0; font-size: 14px; color: #d9534f; font-weight: bold; text-align: center;">
-                                    This code expires in 5 minutes.
+                                    This link is valid for 15 minutes only.
                                 </p>
                                 <p style="margin: 0 0 0 0; font-size: 14px; color: #777; text-align: center;">
-                                    If you did not request this code, please ignore this email.
+                                    If you did not request a password reset, please ignore this email.
                                 </p>
                             </td>
                         </tr>
-
                         <tr>
                             <td style="background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #999;">
-                                <p style="margin: 0;">University Project Management System</p>
+                                <p style="margin: 0;">Patuakhali Science and Technology University</p>
                                 <p style="margin: 5px 0 0 0;">Do not reply to this email.</p>
                             </td>
                         </tr>
                     </table>
-
                 </td>
             </tr>
         </table>
-
     </body>
     </html>
     `;
 };
 
 // src/app/modules/auth/auth.service.ts
-var generateOtp = () => crypto.randomInt(1e5, 999999).toString();
 var loginUser = async (payload) => {
   const { email, password } = payload;
   const user = await prisma.user.findUnique({
@@ -2732,43 +2770,6 @@ var loginUser = async (payload) => {
   if (user.userStatus !== UserStatus.ACTIVE) {
     throw new appErrors_default(400, "User does not exist in the system");
   }
-  const otp = generateOtp();
-  await mailSender_default({
-    to: user.email,
-    subject: "Your OTP Code",
-    html: otpTemplate(otp)
-  });
-  const otpExpire = /* @__PURE__ */ new Date();
-  otpExpire.setMinutes(otpExpire.getMinutes() + 10);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      otp,
-      otpExpiry: otpExpire
-    }
-  });
-  return { message: "OTP sent to your email" };
-};
-var verifyOtp = async (email, otp) => {
-  const user = await prisma.user.findUnique({
-    where: { email, userStatus: UserStatus.ACTIVE }
-  });
-  if (!user) {
-    throw new Error("User not found");
-  }
-  if (user.otp !== otp) {
-    throw new Error("Invalid OTP");
-  }
-  if (user.otpExpiry && user.otpExpiry < /* @__PURE__ */ new Date()) {
-    throw new Error("OTP has expired");
-  }
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      otp: null,
-      otpExpiry: null
-    }
-  });
   const jwtInfo = {
     email: user.email,
     role: user.role
@@ -2783,7 +2784,6 @@ var verifyOtp = async (email, otp) => {
     createSecretKey: config2.jwt.refresh_token_secret,
     expiresIn: config2.jwt.refresh_token_expires_in
   });
-  console.log(refreshToken);
   return {
     token,
     refreshToken
@@ -2812,41 +2812,61 @@ var generateNewToken = async (refreshToken) => {
   });
   return newToken;
 };
-var resendOtp = async (email) => {
+var forgotPassword = async (email) => {
+  const user = await prisma.user.findUnique({
+    where: { email, userStatus: UserStatus.ACTIVE }
+  });
+  if (!user) {
+    throw new appErrors_default(404, "User not found with this email");
+  }
+  const resetToken = jwtGenerator({
+    userInfo: { email: user.email, role: user.role },
+    createSecretKey: config2.jwt.token_secret,
+    expiresIn: "15m"
+  });
+  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:3000";
+  const resetLink = `${clientBaseUrl}/reset-password?token=${resetToken}&email=${user.email}`;
+  try {
+    await mailSender_default({
+      to: user.email,
+      subject: "Reset your password",
+      html: resetPasswordTemplate(resetLink)
+    });
+  } catch (err) {
+    console.error("Email dispatch failed (SMTP error):", err.message);
+  }
+  return { message: "Password reset link sent to your email", resetLink };
+};
+var resetPassword = async (payload) => {
+  const { email, token, newPassword } = payload;
+  const decoded = jwtVerifier({
+    token,
+    secretKey: config2.jwt.token_secret
+  });
+  if (decoded.email !== email) {
+    throw new appErrors_default(400, "Invalid reset token or email mismatch");
+  }
   const user = await prisma.user.findUnique({
     where: { email, userStatus: UserStatus.ACTIVE }
   });
   if (!user) {
     throw new appErrors_default(404, "User not found");
   }
-  if (!user.isEmailVerified) {
-    throw new appErrors_default(400, "Email is not verified");
-  }
-  const otp = generateOtp();
-  await mailSender_default({
-    to: user.email,
-    subject: "Your OTP Code",
-    html: otpTemplate(otp)
-  });
-  const otpExpire = /* @__PURE__ */ new Date();
-  otpExpire.setMinutes(otpExpire.getMinutes() + 10);
+  const hashedPassword = await bcrypt2.hash(newPassword, Number(config2.salt_rounds) || 12);
   await prisma.user.update({
     where: { id: user.id },
-    data: {
-      otp,
-      otpExpiry: otpExpire
-    }
+    data: { password: hashedPassword }
   });
-  return { message: "OTP resent to your email" };
+  return { message: "Password reset successfully" };
 };
 var logout = async () => {
   return null;
 };
 var AuthService = {
   loginUser,
-  verifyOtp,
   generateNewToken,
-  resendOtp,
+  forgotPassword,
+  resetPassword,
   logout
 };
 
@@ -2861,11 +2881,6 @@ var dayToMs = (days) => days * 24 * 60 * 60 * 1e3;
 var login = catchAsync(async (req, res) => {
   const { email, password } = req.body;
   const result = await AuthService.loginUser({ email, password });
-  sendResponse(res, 200, "Login successful", result);
-});
-var verifyOtp2 = catchAsync(async (req, res) => {
-  const { email, otp } = req.body;
-  const result = await AuthService.verifyOtp(email, otp);
   const { refreshToken, token } = result;
   res.cookie("accessToken", token, {
     ...cookieOptions,
@@ -2875,7 +2890,7 @@ var verifyOtp2 = catchAsync(async (req, res) => {
     ...cookieOptions,
     maxAge: dayToMs(Number(config2.jwt.refresh_token_expires_in?.split("d")[0]))
   });
-  sendResponse(res, 200, "OTP verified successfully", { data: result });
+  sendResponse(res, 200, "Login successful", result);
 });
 var generateNewToken2 = catchAsync(async (req, res) => {
   const { refreshToken } = req.body;
@@ -2886,10 +2901,15 @@ var generateNewToken2 = catchAsync(async (req, res) => {
   });
   sendResponse(res, 200, "New token generated successfully", { data: result });
 });
-var resendOtp2 = catchAsync(async (req, res) => {
+var forgotPassword2 = catchAsync(async (req, res) => {
   const { email } = req.body;
-  const result = await AuthService.resendOtp(email);
-  sendResponse(res, 200, "OTP resend Successfully", result);
+  const result = await AuthService.forgotPassword(email);
+  sendResponse(res, 200, "Password reset link sent to your email", result);
+});
+var resetPassword2 = catchAsync(async (req, res) => {
+  const { email, token, newPassword } = req.body;
+  const result = await AuthService.resetPassword({ email, token, newPassword });
+  sendResponse(res, 200, "Password reset successfully", result);
 });
 var logout2 = catchAsync(async (req, res) => {
   const result = await AuthService.logout();
@@ -2899,18 +2919,18 @@ var logout2 = catchAsync(async (req, res) => {
 });
 var AuthController = {
   login,
-  verifyOtp: verifyOtp2,
   generateNewToken: generateNewToken2,
-  resendOtp: resendOtp2,
+  forgotPassword: forgotPassword2,
+  resetPassword: resetPassword2,
   logout: logout2
 };
 
 // src/app/modules/auth/auth.route.ts
 var router7 = express7.Router();
 router7.post("/login", AuthController.login);
-router7.post("/verify-otp", AuthController.verifyOtp);
+router7.post("/forget-password", AuthController.forgotPassword);
+router7.post("/reset-password", AuthController.resetPassword);
 router7.post("/generate-new-token", AuthController.generateNewToken);
-router7.post("/resend-otp", AuthController.resendOtp);
 router7.get("/logout", AuthController.logout);
 var AuthRoutes = router7;
 
@@ -3546,6 +3566,13 @@ var taskResubmissionTemplate = (isTaskExist, review) => {
 
 // src/app/modules/task/task.service.ts
 var createTaskIntoDB = async (taskInfo) => {
+  if (taskInfo.dueDate) {
+    const dueDate = new Date(taskInfo.dueDate);
+    const now = /* @__PURE__ */ new Date();
+    if (dueDate < now) {
+      throw new appErrors_default(400, "Due date cannot be in the past");
+    }
+  }
   const result = await prisma.task.create({
     data: taskInfo
   });
@@ -3978,12 +4005,52 @@ router10.patch("/:id", TaskController.updateTaskInDB);
 var TaskRoutes = router10;
 
 // src/app.ts
+import helmet from "helmet";
+
+// src/utils/limit.ts
+import rateLimit from "express-rate-limit";
+var limitHandler = (req, res, next, options) => {
+  res.status(options.statusCode).json({
+    success: false,
+    message: options.message,
+    errorSources: [
+      {
+        path: "",
+        message: options.message
+      }
+    ]
+  });
+};
+var globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1e3,
+  max: 1e3,
+  message: "Too many requests from this IP, please try again after 15 minutes.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: limitHandler
+});
+var authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1e3,
+  max: 5,
+  message: "Too many login/reset attempts, please try again after 15 minutes.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: limitHandler
+});
+
+// src/app.ts
 var app = express11();
+app.use(helmet());
 app.use(express11.json());
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000", "http://pstu.meteorologyclub.com"],
   credentials: true
 }));
+app.use("/api/v1", globalLimiter);
+app.use("/api/v1/auth/login", authLimiter);
+app.use("/api/v1/auth/forget-password", authLimiter);
+app.use("/api/v1/auth/reset-password", authLimiter);
+app.use("/api/v1/auth/change-password", authLimiter);
 app.use("/api/v1/students", StudentRoutes);
 app.use("/api/v1/users", UserRoutes);
 app.use("/api/v1/admins", adminRouter);
